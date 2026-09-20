@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { ExpenseWithCategory } from '../types';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
 import { formatCurrency, formatTime } from '../utils/formatters';
 
 interface ExpenseTimelineProps {
@@ -76,7 +77,12 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
                   {!isLast && <View style={styles.connectorLine} />}
                 </View>
 
-                <View style={styles.contentCard}>
+                <View
+                  style={[
+                    styles.contentCard,
+                    { borderLeftWidth: 3.5, borderLeftColor: expense.category_color },
+                  ]}
+                >
                   <View style={styles.infoCol}>
                     <Text style={styles.categoryTitle}>
                       {expense.category_name}
@@ -127,12 +133,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: typography.bold,
     color: colors.textPrimary,
   },
   countBadge: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: typography.medium,
     color: colors.textSecondary,
     backgroundColor: colors.surfaceHighlight,
     paddingHorizontal: 10,
@@ -147,7 +153,7 @@ const styles = StyleSheet.create({
     padding: 28,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardBorder,
     borderStyle: 'dashed',
   },
   emptyIconCircle: {
@@ -161,13 +167,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    fontFamily: typography.bold,
+    color: colors.cardTextPrimary,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: colors.textSecondary,
+    fontFamily: typography.medium,
+    color: colors.cardTextSecondary,
     textAlign: 'center',
     lineHeight: 19,
   },
@@ -185,7 +192,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: typography.medium,
     color: colors.textMuted,
     marginBottom: 4,
   },
@@ -205,15 +212,15 @@ const styles = StyleSheet.create({
   },
   contentCard: {
     flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    paddingVertical: 12,
+    backgroundColor: colors.bentoCard,
+    borderRadius: 20,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.bentoBorder,
   },
   infoCol: {
     flex: 1,
@@ -221,12 +228,13 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    fontFamily: typography.bold,
+    color: colors.cardTextPrimary,
   },
   descriptionText: {
     fontSize: 12,
-    color: colors.textSecondary,
+    fontFamily: typography.medium,
+    color: colors.cardTextSecondary,
     marginTop: 2,
   },
   actionCol: {
@@ -234,9 +242,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   amountText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: colors.primary,
+    fontSize: 16,
+    fontFamily: typography.bold,
+    color: colors.cardTextPrimary,
   },
   deleteButton: {
     padding: 2,

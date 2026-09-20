@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Category } from '../types';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
 import { formatCurrency } from '../utils/formatters';
 
 interface QuickExpenseModalProps {
@@ -309,11 +310,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: typography.bold,
     color: colors.textPrimary,
   },
   modalSubtitle: {
     fontSize: 12,
+    fontFamily: typography.medium,
     color: colors.textSecondary,
   },
   closeButton: {
@@ -339,17 +341,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surfaceHighlight,
     borderWidth: 1,
     borderColor: colors.border,
   },
   categoryChipText: {
     fontSize: 13,
+    fontFamily: typography.medium,
     color: colors.textSecondary,
-    fontWeight: '500',
   },
   displayCard: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surfaceHighlight,
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -360,14 +362,14 @@ const styles = StyleSheet.create({
   },
   amountLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: typography.bold,
     color: colors.textMuted,
     letterSpacing: 1,
     marginBottom: 2,
   },
   amountDisplay: {
     fontSize: 34,
-    fontWeight: '800',
+    fontFamily: typography.bold,
     color: colors.primary,
     letterSpacing: -0.5,
   },
@@ -388,14 +390,14 @@ const styles = StyleSheet.create({
   },
   presetText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: typography.bold,
     color: colors.textPrimary,
   },
   descriptionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surfaceHighlight,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 14,
@@ -406,6 +408,7 @@ const styles = StyleSheet.create({
   descriptionInput: {
     flex: 1,
     fontSize: 14,
+    fontFamily: typography.medium,
     color: colors.textPrimary,
     padding: 0,
   },
@@ -429,7 +432,7 @@ const styles = StyleSheet.create({
   },
   keyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: typography.medium,
     color: colors.textPrimary,
   },
   clearKey: {
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
   },
   clearKeyText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: typography.bold,
     color: colors.danger,
   },
   backspaceKey: {
@@ -464,7 +467,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: typography.bold,
     color: colors.background,
   },
 });

@@ -46,6 +46,8 @@ async function setupDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
         [cat.name, cat.icon, cat.color, cat.is_shortcut]
       );
     }
+  } else {
+    await db.runAsync("UPDATE categories SET color = '#EF4444' WHERE name = 'Farmácia' AND color = '#EC4899';");
   }
 }
 
@@ -118,3 +120,47 @@ export async function fetchTodayTotal(): Promise<number> {
 
   return result?.total || 0;
 }
+
+export async function fetchAllExpenses(): Promise<ExpenseWithCategory[]> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<ExpenseWithCategory>(
+    `SELECT 
+      e.id,
+      e.amount,
+      e.category_id,
+      e.description,
+      e.created_at,
+      c.name AS category_name,
+      c.icon AS category_icon,
+      c.color AS category_color
+    FROM expenses e
+    INNER JOIN categories c ON e.category_id = c.id
+    ORDER BY e.created_at DESC;`
+  );
+  return rows;
+}
+
+export async function fetchAllTotal(): Promise<number> {
+  const db = await getDatabase();
+  const result = await db.getFirstAsync<{ total: number | null }>(
+    'SELECT SUM(amount) as total FROM expenses;'
+  );
+
+  return result?.total || 0;
+}
+
+export async function fetchMonthTotal(): Promise<number> {
+  const db = await getDatabase();
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+
+  const result = await db.getFirstAsync<{ total: number | null }>(
+    'SELECT SUM(amount) as total FROM expenses WHERE created_at >= ? AND created_at <= ?;',
+    [startOfMonth, endOfMonth]
+  );
+
+  return result?.total || 0;
+}
+
+

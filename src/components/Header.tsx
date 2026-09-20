@@ -1,53 +1,82 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
 import { formatCurrency, formatDateHeader } from '../utils/formatters';
 import { LogoStatic } from './AnimatedLogo';
 
 interface HeaderProps {
   total: number;
   count: number;
+  onOpenAllExpenses?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ total, count }) => {
+export const Header: React.FC<HeaderProps> = ({ total, onOpenAllExpenses }) => {
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 375;
+
+  // Cálculo da meta de gastos diários (base de R$ 350,00 ou ajustada dinamicamente)
+  const dailyGoal = 350;
+  const isOverGoal = total > dailyGoal;
+  const remaining = Math.max(0, dailyGoal - total);
+  const progressPercent = Math.min(100, Math.round((total / dailyGoal) * 100));
+
   return (
     <View style={styles.container}>
       <View style={styles.brandRow}>
         <View style={styles.brandTitleContainer}>
-          <LogoStatic width={44} color={colors.primary} />
+          <LogoStatic width={42} color={colors.white} />
           <Text style={styles.brandName}>Zest</Text>
         </View>
         <View style={styles.dateBadge}>
-          <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.dateText}>{formatDateHeader()}</Text>
+          <Ionicons name="calendar-outline" size={13} color={colors.textSecondary} />
+          <Text style={styles.dateText}>{formatDateHeader(new Date(), isSmallScreen)}</Text>
         </View>
       </View>
 
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
+        <View style={styles.cardTopRow}>
           <Text style={styles.cardSubtitle}>GASTOS DE HOJE</Text>
-          <View style={styles.liveTag}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>Hoje</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.listIconButton}
+            activeOpacity={0.7}
+            onPress={onOpenAllExpenses}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="list-outline" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.totalValue}>{formatCurrency(total)}</Text>
 
-        <View style={styles.cardFooter}>
-          <View style={styles.metricItem}>
-            <Ionicons name="receipt-outline" size={16} color={colors.primary} />
-            <Text style={styles.metricText}>
-              {count === 0
-                ? 'Nenhum registro'
-                : `${count} ${count === 1 ? 'micro-gasto' : 'micro-gastos'}`}
+        <View style={styles.cardDivider} />
+
+        <View style={styles.goalRow}>
+          <View style={styles.goalLeft}>
+            <Text style={styles.goalLabel}>Meta de gastos</Text>
+            <Text style={[styles.goalStatus, isOverGoal ? styles.goalStatusOver : styles.goalStatusOk]}>
+              {isOverGoal
+                ? `+${formatCurrency(total - dailyGoal)} acima`
+                : `restam ${formatCurrency(remaining)}`}
             </Text>
           </View>
-          <View style={styles.speedTag}>
-            <Ionicons name="flash" size={12} color={colors.primary} />
-            <Text style={styles.speedText}>Fluxo de 3s</Text>
+          <View style={styles.goalRight}>
+            <Text style={styles.goalValue}>{formatCurrency(dailyGoal)}</Text>
+            <Text style={styles.goalPercentText}>{progressPercent}%</Text>
           </View>
+        </View>
+
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressBar,
+              {
+                width: `${progressPercent}%`,
+                backgroundColor: isOverGoal ? colors.danger : colors.primary,
+              },
+            ]}
+          />
         </View>
       </View>
     </View>
@@ -73,8 +102,8 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: 22,
-    fontWeight: '800',
-    color: colors.textPrimary,
+    fontFamily: typography.bold,
+    color: colors.white,
     letterSpacing: 0.5,
   },
   dateBadge: {
@@ -90,87 +119,103 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
+    fontFamily: typography.medium,
     color: colors.textSecondary,
-    fontWeight: '500',
   },
   card: {
     backgroundColor: colors.card,
     borderRadius: 24,
-    padding: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 22,
     borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    borderColor: colors.cardBorder,
   },
-  cardHeader: {
+  cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textMuted,
+    fontSize: 11,
+    fontFamily: typography.medium,
+    color: colors.cardTextMuted,
     letterSpacing: 1.2,
   },
-  liveTag: {
-    flexDirection: 'row',
+  listIconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceHighlight,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(226, 241, 99, 0.12)',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-  },
-  liveText: {
-    fontSize: 11,
-    color: colors.primary,
-    fontWeight: '700',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   totalValue: {
     fontSize: 38,
-    fontWeight: '800',
-    color: colors.textPrimary,
+    fontFamily: typography.bold,
+    color: colors.cardTextPrimary,
     letterSpacing: -0.5,
-    marginVertical: 4,
   },
-  cardFooter: {
+  cardDivider: {
+    height: 1,
+    backgroundColor: colors.cardDivider,
+    marginVertical: 14,
+  },
+  goalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    marginBottom: 10,
   },
-  metricItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  goalLeft: {
+    flex: 1,
+    marginRight: 12,
+    gap: 2,
   },
-  metricText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  speedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  speedText: {
+  goalLabel: {
     fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
+    fontFamily: typography.medium,
+    color: colors.cardTextSecondary,
+  },
+  goalStatus: {
+    fontSize: 11,
+    fontFamily: typography.medium,
+  },
+  goalStatusOk: {
+    color: colors.cardTextMuted,
+  },
+  goalStatusOver: {
+    color: colors.danger,
+  },
+  goalRight: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    paddingRight: 6,
+    gap: 1,
+  },
+  goalValue: {
+    fontSize: 15,
+    fontFamily: typography.bold,
+    color: colors.cardTextPrimary,
+    paddingRight: 2,
+    textAlign: 'right',
+  },
+  goalPercentText: {
+    fontSize: 10,
+    fontFamily: typography.medium,
+    color: colors.cardTextMuted,
+    paddingRight: 2,
+  },
+  progressTrack: {
+    height: 4,
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 2,
   },
 });

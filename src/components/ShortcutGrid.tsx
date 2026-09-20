@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Category } from '../types';
 import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
 
 interface ShortcutGridProps {
   categories: Category[];
@@ -18,12 +19,7 @@ export const ShortcutGrid: React.FC<ShortcutGridProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Atalhos Rápidos</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>3s</Text>
-          </View>
-        </View>
+        <Text style={styles.title}>Atalhos Rápidos</Text>
         <Text style={styles.subtitle}>Toque para registrar instantaneamente</Text>
       </View>
 
@@ -38,12 +34,12 @@ export const ShortcutGrid: React.FC<ShortcutGridProps> = ({
             <View
               style={[
                 styles.iconWrapper,
-                { backgroundColor: `${category.color}22` },
+                { backgroundColor: `${category.color}20` },
               ]}
             >
               <Ionicons
                 name={category.icon as any}
-                size={24}
+                size={22}
                 color={category.color}
               />
             </View>
@@ -60,34 +56,19 @@ export const ShortcutGrid: React.FC<ShortcutGridProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   header: {
-    marginBottom: 14,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginBottom: 12,
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  badge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.background,
+    fontFamily: typography.bold,
+    color: colors.white,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 12,
+    fontFamily: typography.medium,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -98,26 +79,26 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '30.5%',
-    backgroundColor: colors.card,
-    borderRadius: 18,
+    backgroundColor: colors.bentoCard,
+    borderRadius: 22,
     paddingVertical: 16,
     paddingHorizontal: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.bentoBorder,
   },
   iconWrapper: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   categoryName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 12,
+    fontFamily: typography.medium,
+    color: colors.white,
     textAlign: 'center',
   },
 });
