@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { formatCurrency, formatDateHeader } from '../utils/formatters';
+import { LogoStatic } from './AnimatedLogo';
 
 interface HeaderProps {
   total: number;
@@ -14,7 +15,7 @@ export const Header: React.FC<HeaderProps> = ({ total, count }) => {
     <View style={styles.container}>
       <View style={styles.brandRow}>
         <View style={styles.brandTitleContainer}>
-          <Text style={styles.brandLogo}>⚡</Text>
+          <LogoStatic width={44} color={colors.primary} />
           <Text style={styles.brandName}>Zest</Text>
         </View>
         <View style={styles.dateBadge}>
@@ -68,10 +69,7 @@ const styles = StyleSheet.create({
   brandTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  brandLogo: {
-    fontSize: 24,
+    gap: 10,
   },
   brandName: {
     fontSize: 22,
