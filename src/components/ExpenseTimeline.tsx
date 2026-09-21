@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ExpenseWithCategory } from '../types';
-import { colors } from '../theme/colors';
+import { ColorTheme } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { typography } from '../theme/typography';
 import { formatCurrency, formatTime } from '../utils/formatters';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { BouncingPressable } from './common/BouncingPressable';
 
 interface ExpenseTimelineProps {
   expenses: ExpenseWithCategory[];
@@ -21,10 +23,14 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
   expenses,
   onDeleteExpense,
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const { currency } = useSettingsStore();
+
   const confirmDelete = (expense: ExpenseWithCategory) => {
     Alert.alert(
       'Excluir registro',
-      `Deseja remover o gasto de ${formatCurrency(expense.amount)} em ${expense.category_name}?`,
+      `Deseja remover o gasto de ${formatCurrency(expense.amount, currency)} em ${expense.category_name}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -46,7 +52,7 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
       {expenses.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="sparkles-outline" size={32} color={colors.primary} />
+            <Ionicons name="sparkles-outline" size={32} color={isDark ? colors.primary : colors.textPrimary} />
           </View>
           <Text style={styles.emptyTitle}>Sem gastos registrados hoje</Text>
           <Text style={styles.emptySubtitle}>
@@ -96,10 +102,11 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
 
                   <View style={styles.actionCol}>
                     <Text style={styles.amountText}>
-                      {formatCurrency(expense.amount)}
+                      {formatCurrency(expense.amount, currency)}
                     </Text>
-                    <TouchableOpacity
+                    <BouncingPressable
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      scaleTo={0.88}
                       onPress={() => confirmDelete(expense)}
                       style={styles.deleteButton}
                     >
@@ -108,7 +115,7 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
                         size={15}
                         color={colors.textMuted}
                       />
-                    </TouchableOpacity>
+                    </BouncingPressable>
                   </View>
                 </View>
               </View>
@@ -120,133 +127,134 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    paddingBottom: 90,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: typography.bold,
-    color: colors.textPrimary,
-  },
-  countBadge: {
-    fontSize: 12,
-    fontFamily: typography.medium,
-    color: colors.textSecondary,
-    backgroundColor: colors.surfaceHighlight,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emptyContainer: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 28,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderStyle: 'dashed',
-  },
-  emptyIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(226, 241, 99, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontFamily: typography.bold,
-    color: colors.cardTextPrimary,
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    fontFamily: typography.medium,
-    color: colors.cardTextSecondary,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  timelineList: {
-    gap: 12,
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  leftColumn: {
-    alignItems: 'center',
-    width: 44,
-  },
-  timeText: {
-    fontSize: 11,
-    fontFamily: typography.medium,
-    color: colors.textMuted,
-    marginBottom: 4,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  connectorLine: {
-    width: 2,
-    flex: 1,
-    minHeight: 28,
-    backgroundColor: colors.border,
-    marginTop: 4,
-  },
-  contentCard: {
-    flex: 1,
-    backgroundColor: colors.bentoCard,
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.bentoBorder,
-  },
-  infoCol: {
-    flex: 1,
-    marginRight: 10,
-  },
-  categoryTitle: {
-    fontSize: 15,
-    fontFamily: typography.bold,
-    color: colors.cardTextPrimary,
-  },
-  descriptionText: {
-    fontSize: 12,
-    fontFamily: typography.medium,
-    color: colors.cardTextSecondary,
-    marginTop: 2,
-  },
-  actionCol: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  amountText: {
-    fontSize: 16,
-    fontFamily: typography.bold,
-    color: colors.cardTextPrimary,
-  },
-  deleteButton: {
-    padding: 2,
-  },
-});
+const createStyles = (colors: ColorTheme, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      paddingHorizontal: 20,
+      paddingBottom: 90,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    title: {
+      fontSize: 18,
+      fontFamily: typography.bold,
+      color: colors.textPrimary,
+    },
+    countBadge: {
+      fontSize: 12,
+      fontFamily: typography.medium,
+      color: colors.textSecondary,
+      backgroundColor: colors.surfaceHighlight,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyContainer: {
+      backgroundColor: colors.bentoCard,
+      borderRadius: 20,
+      padding: 28,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.bentoBorder,
+      borderStyle: 'dashed',
+    },
+    emptyIconCircle: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: isDark ? 'rgba(226, 241, 99, 0.12)' : 'rgba(18, 18, 20, 0.06)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    emptyTitle: {
+      fontSize: 16,
+      fontFamily: typography.bold,
+      color: colors.cardTextPrimary,
+      marginBottom: 6,
+    },
+    emptySubtitle: {
+      fontSize: 13,
+      fontFamily: typography.medium,
+      color: colors.cardTextSecondary,
+      textAlign: 'center',
+      lineHeight: 19,
+    },
+    timelineList: {
+      gap: 12,
+    },
+    timelineRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+    },
+    leftColumn: {
+      alignItems: 'center',
+      width: 44,
+    },
+    timeText: {
+      fontSize: 11,
+      fontFamily: typography.medium,
+      color: colors.textMuted,
+      marginBottom: 4,
+    },
+    iconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    connectorLine: {
+      width: 2,
+      flex: 1,
+      minHeight: 28,
+      backgroundColor: colors.border,
+      marginTop: 4,
+    },
+    contentCard: {
+      flex: 1,
+      backgroundColor: colors.bentoCard,
+      borderRadius: 20,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.bentoBorder,
+    },
+    infoCol: {
+      flex: 1,
+      marginRight: 10,
+    },
+    categoryTitle: {
+      fontSize: 15,
+      fontFamily: typography.bold,
+      color: colors.cardTextPrimary,
+    },
+    descriptionText: {
+      fontSize: 12,
+      fontFamily: typography.medium,
+      color: colors.cardTextSecondary,
+      marginTop: 2,
+    },
+    actionCol: {
+      alignItems: 'flex-end',
+      gap: 6,
+    },
+    amountText: {
+      fontSize: 16,
+      fontFamily: typography.bold,
+      color: colors.cardTextPrimary,
+    },
+    deleteButton: {
+      padding: 2,
+    },
+  });

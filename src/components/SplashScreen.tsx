@@ -24,10 +24,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
   readyRef.current = isReady;
 
+  const hasFinishedRef = useRef(false);
+
   const finishSplash = () => {
+    if (hasFinishedRef.current) return;
+    hasFinishedRef.current = true;
     Animated.timing(containerOpacity, {
       toValue: 0,
-      duration: 300,
+      duration: 250,
       useNativeDriver: true,
     }).start(() => {
       onFinish();
@@ -46,6 +50,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       finishSplash();
     }
   }, [isReady]);
+
+  // Timeout de segurança absoluto: após 2.2s, nunca mantém o app congelado na splash
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      finishSplash();
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]}>

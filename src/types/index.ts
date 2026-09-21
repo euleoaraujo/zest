@@ -8,6 +8,7 @@ export interface Category {
 
 export interface Expense {
   id: number;
+  user_id?: number;
   amount: number;
   category_id: number;
   description?: string | null;
@@ -24,4 +25,13 @@ export interface CreateExpensePayload {
   amount: number;
   categoryId: number;
   description?: string;
+  userId?: number;
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  daily_goal?: number;
+  created_at: string;
 }

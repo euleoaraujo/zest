@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -12,9 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Category } from '../types';
-import { colors } from '../theme/colors';
+import { ColorTheme } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { typography } from '../theme/typography';
 import { formatCurrency } from '../utils/formatters';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { BouncingPressable } from './common/BouncingPressable';
 
 interface QuickExpenseModalProps {
   visible: boolean;
@@ -31,10 +34,16 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const { currency, getCurrencySymbol } = useSettingsStore();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(initialCategory);
   const [centsValue, setCentsValue] = useState<number>(0);
   const [description, setDescription] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const amountInputRef = useRef<TextInput>(null);
+  const descriptionInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (visible) {
@@ -42,24 +51,23 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
       setCentsValue(0);
       setDescription('');
       setIsSubmitting(false);
+
+      // Foca automaticamente no campo de valor com o teclado numérico nativo do iPhone
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 250);
+
+      return () => clearTimeout(timer);
     }
   }, [visible, initialCategory, categories]);
 
   const currentAmount = centsValue / 100;
 
-  const handleDigitPress = (digit: string) => {
-    if (centsValue.toString().length >= 8) return;
-    const nextString = centsValue === 0 ? digit : `${centsValue}${digit}`;
-    setCentsValue(parseInt(nextString, 10) || 0);
-  };
-
-  const handleBackspace = () => {
-    const stringVal = centsValue.toString();
-    if (stringVal.length <= 1) {
-      setCentsValue(0);
-    } else {
-      setCentsValue(parseInt(stringVal.slice(0, -1), 10) || 0);
-    }
+  const handleAmountChange = (text: string) => {
+    const digitsOnly = text.replace(/\D/g, '');
+    if (digitsOnly.length > 8) return;
+    const parsed = parseInt(digitsOnly, 10);
+    setCentsValue(isNaN(parsed) ? 0 : parsed);
   };
 
   const handleQuickAdd = (valueInReais: number) => {
@@ -103,17 +111,19 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <Text style={styles.modalTitle}>Novo Registro</Text>
-              <Text style={styles.modalSubtitle}>Entrada em 1 clique</Text>
+              <Text style={styles.modalSubtitle}>Entrada rápida</Text>
             </View>
-            <TouchableOpacity
+            <BouncingPressable
               onPress={onClose}
               style={styles.closeButton}
+              scaleTo={0.9}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="close" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+            </BouncingPressable>
           </View>
 
+          {/* Seleção Horizontal de Categorias */}
           <View style={styles.categoryScrollWrapper}>
             <ScrollView
               horizontal
@@ -123,9 +133,9 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
               {categories.map((cat) => {
                 const isSelected = selectedCategory?.id === cat.id;
                 return (
-                  <TouchableOpacity
+                  <BouncingPressable
                     key={cat.id}
-                    activeOpacity={0.7}
+                    scaleTo={0.93}
                     onPress={() => setSelectedCategory(cat)}
                     style={[
                       styles.categoryChip,
@@ -143,331 +153,284 @@ export const QuickExpenseModal: React.FC<QuickExpenseModalProps> = ({
                     <Text
                       style={[
                         styles.categoryChipText,
-                        isSelected && { color: cat.color, fontWeight: '700' },
+                        isSelected && { color: cat.color, fontFamily: typography.bold },
                       ]}
                     >
                       {cat.name}
                     </Text>
-                  </TouchableOpacity>
+                  </BouncingPressable>
                 );
               })}
             </ScrollView>
           </View>
 
-          <View style={styles.displayCard}>
+          {/* Card de Valor com TextInput e Teclado Numérico Nativo do iPhone */}
+          <TouchableOpacity
+            style={styles.displayCard}
+            activeOpacity={0.9}
+            onPress={() => amountInputRef.current?.focus()}
+          >
             <Text style={styles.amountLabel}>VALOR</Text>
-            <Text style={styles.amountDisplay}>
-              {formatCurrency(currentAmount)}
-            </Text>
-          </View>
 
+            <View style={styles.amountInputRow}>
+              <TextInput
+                ref={amountInputRef}
+                style={styles.amountInput}
+                keyboardType="number-pad"
+                value={centsValue === 0 ? '' : formatCurrency(currentAmount, currency)}
+                placeholder={`${getCurrencySymbol()} 0,00`}
+                placeholderTextColor={isDark ? 'rgba(226, 241, 99, 0.4)' : colors.textMuted}
+                onChangeText={handleAmountChange}
+                maxLength={14}
+              />
+
+              {centsValue > 0 && (
+                <BouncingPressable
+                  style={styles.clearAmountButton}
+                  scaleTo={0.88}
+                  onPress={() => setCentsValue(0)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close-circle" size={22} color={colors.textMuted} />
+                </BouncingPressable>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* Atalhos de Valores Rápidos (+2, +5, +10, etc.) */}
           <View style={styles.presetsRow}>
             {quickPresets.map((preset) => (
-              <TouchableOpacity
+              <BouncingPressable
                 key={preset}
                 style={styles.presetButton}
-                activeOpacity={0.7}
+                scaleTo={0.93}
                 onPress={() => handleQuickAdd(preset)}
               >
                 <Text style={styles.presetText}>+{preset}</Text>
-              </TouchableOpacity>
+              </BouncingPressable>
             ))}
           </View>
 
-          <View style={styles.descriptionRow}>
+          {/* Campo de Descrição com Teclado Normal Alfanumérico */}
+          <TouchableOpacity
+            style={styles.descriptionRow}
+            activeOpacity={0.9}
+            onPress={() => descriptionInputRef.current?.focus()}
+          >
             <Ionicons name="create-outline" size={18} color={colors.textMuted} />
             <TextInput
+              ref={descriptionInputRef}
               style={styles.descriptionInput}
-              placeholder="Descrição opcional (ex.: Café expresso)"
+              placeholder="Descrição opcional (ex.: Farmácia, Café)"
               placeholderTextColor={colors.textMuted}
               value={description}
               onChangeText={setDescription}
               maxLength={40}
+              keyboardType="default"
               returnKeyType="done"
             />
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.keypad}>
-            <View style={styles.keypadRow}>
-              {['1', '2', '3'].map((key) => (
-                <TouchableOpacity
-                  key={key}
-                  style={styles.key}
-                  activeOpacity={0.5}
-                  onPress={() => handleDigitPress(key)}
-                >
-                  <Text style={styles.keyText}>{key}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.keypadRow}>
-              {['4', '5', '6'].map((key) => (
-                <TouchableOpacity
-                  key={key}
-                  style={styles.key}
-                  activeOpacity={0.5}
-                  onPress={() => handleDigitPress(key)}
-                >
-                  <Text style={styles.keyText}>{key}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.keypadRow}>
-              {['7', '8', '9'].map((key) => (
-                <TouchableOpacity
-                  key={key}
-                  style={styles.key}
-                  activeOpacity={0.5}
-                  onPress={() => handleDigitPress(key)}
-                >
-                  <Text style={styles.keyText}>{key}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.keypadRow}>
-              <TouchableOpacity
-                style={[styles.key, styles.clearKey]}
-                activeOpacity={0.5}
-                onPress={() => setCentsValue(0)}
-              >
-                <Text style={styles.clearKeyText}>C</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.key}
-                activeOpacity={0.5}
-                onPress={() => handleDigitPress('0')}
-              >
-                <Text style={styles.keyText}>0</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.key, styles.backspaceKey]}
-                activeOpacity={0.5}
-                onPress={handleBackspace}
-              >
-                <Ionicons name="backspace-outline" size={24} color={colors.textPrimary} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity
+          {/* Botão de Concluir Registro */}
+          <BouncingPressable
             style={[
               styles.submitButton,
               currentAmount <= 0 && styles.submitButtonDisabled,
             ]}
-            activeOpacity={0.8}
+            scaleTo={0.96}
             onPress={handleSave}
             disabled={currentAmount <= 0 || isSubmitting}
           >
-            <Ionicons name="checkmark-circle" size={20} color={colors.background} />
+            <Ionicons name="checkmark-circle" size={20} color={colors.buttonText} />
             <Text style={styles.submitButtonText}>
               {currentAmount > 0
-                ? `Registrar ${formatCurrency(currentAmount)}`
+                ? `Registrar ${formatCurrency(currentAmount, currency)}`
                 : 'Informe o valor'}
             </Text>
-          </TouchableOpacity>
+          </BouncingPressable>
         </KeyboardAvoidingView>
       </View>
     </Modal>
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: colors.backdrop,
-  },
-  backdrop: {
-    flex: 1,
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 28,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dragHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.textMuted,
-    alignSelf: 'center',
-    marginBottom: 12,
-    opacity: 0.5,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerLeft: {
-    gap: 2,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: typography.bold,
-    color: colors.textPrimary,
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    fontFamily: typography.medium,
-    color: colors.textSecondary,
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceHighlight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryScrollWrapper: {
-    marginHorizontal: -20,
-    marginBottom: 12,
-  },
-  categoryScroll: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceHighlight,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  categoryChipText: {
-    fontSize: 13,
-    fontFamily: typography.medium,
-    color: colors.textSecondary,
-  },
-  displayCard: {
-    backgroundColor: colors.surfaceHighlight,
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 10,
-  },
-  amountLabel: {
-    fontSize: 11,
-    fontFamily: typography.bold,
-    color: colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  amountDisplay: {
-    fontSize: 34,
-    fontFamily: typography.bold,
-    color: colors.primary,
-    letterSpacing: -0.5,
-  },
-  presetsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    gap: 6,
-  },
-  presetButton: {
-    flex: 1,
-    backgroundColor: colors.surfaceHighlight,
-    paddingVertical: 8,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  presetText: {
-    fontSize: 13,
-    fontFamily: typography.bold,
-    color: colors.textPrimary,
-  },
-  descriptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.surfaceHighlight,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 12,
-  },
-  descriptionInput: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: typography.medium,
-    color: colors.textPrimary,
-    padding: 0,
-  },
-  keypad: {
-    gap: 8,
-    marginBottom: 14,
-  },
-  keypadRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  key: {
-    flex: 1,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceHighlight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  keyText: {
-    fontSize: 20,
-    fontFamily: typography.medium,
-    color: colors.textPrimary,
-  },
-  clearKey: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  clearKeyText: {
-    fontSize: 18,
-    fontFamily: typography.bold,
-    color: colors.danger,
-  },
-  backspaceKey: {
-    backgroundColor: colors.surfaceHighlight,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    height: 52,
-    borderRadius: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  submitButtonDisabled: {
-    backgroundColor: colors.surfaceHighlight,
-    opacity: 0.5,
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontFamily: typography.bold,
-    color: colors.background,
-  },
-});
+const createStyles = (colors: ColorTheme, isDark: boolean) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: colors.backdrop,
+    },
+    backdrop: {
+      flex: 1,
+    },
+    modalContent: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 32,
+      borderTopRightRadius: 32,
+      paddingTop: 12,
+      paddingHorizontal: 20,
+      paddingBottom: Platform.OS === 'ios' ? 24 : 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    dragHandle: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.textMuted,
+      alignSelf: 'center',
+      marginBottom: 12,
+      opacity: 0.5,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    headerLeft: {
+      gap: 2,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontFamily: typography.bold,
+      color: colors.textPrimary,
+    },
+    modalSubtitle: {
+      fontSize: 12,
+      fontFamily: typography.medium,
+      color: colors.textSecondary,
+    },
+    closeButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.surfaceHighlight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    categoryScrollWrapper: {
+      marginHorizontal: -20,
+      marginBottom: 12,
+    },
+    categoryScroll: {
+      paddingHorizontal: 20,
+      gap: 8,
+    },
+    categoryChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      backgroundColor: colors.surfaceHighlight,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    categoryChipText: {
+      fontSize: 13,
+      fontFamily: typography.medium,
+      color: colors.textSecondary,
+    },
+    displayCard: {
+      backgroundColor: colors.surfaceHighlight,
+      borderRadius: 18,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 10,
+    },
+    amountLabel: {
+      fontSize: 11,
+      fontFamily: typography.bold,
+      color: colors.textMuted,
+      letterSpacing: 1,
+      marginBottom: 2,
+    },
+    amountInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      position: 'relative',
+    },
+    amountInput: {
+      fontSize: 34,
+      fontFamily: typography.bold,
+      color: isDark ? colors.primary : colors.textPrimary,
+      letterSpacing: -0.5,
+      textAlign: 'center',
+      paddingVertical: 4,
+      paddingHorizontal: 12,
+    },
+    clearAmountButton: {
+      position: 'absolute',
+      right: 4,
+    },
+    presetsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+      gap: 6,
+    },
+    presetButton: {
+      flex: 1,
+      backgroundColor: colors.surfaceHighlight,
+      paddingVertical: 8,
+      borderRadius: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    presetText: {
+      fontSize: 13,
+      fontFamily: typography.bold,
+      color: colors.textPrimary,
+    },
+    descriptionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: colors.surfaceHighlight,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+    },
+    descriptionInput: {
+      flex: 1,
+      fontSize: 14,
+      fontFamily: typography.medium,
+      color: colors.textPrimary,
+      padding: 0,
+    },
+    submitButton: {
+      backgroundColor: colors.buttonBg,
+      height: 52,
+      borderRadius: 16,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.25 : 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    submitButtonDisabled: {
+      backgroundColor: colors.surfaceHighlight,
+      opacity: 0.5,
+    },
+    submitButtonText: {
+      fontSize: 16,
+      fontFamily: typography.bold,
+      color: colors.buttonText,
+    },
+  });

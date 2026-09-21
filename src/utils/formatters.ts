@@ -1,8 +1,20 @@
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(amount);
+export function formatCurrency(amount: number, currencyCode: string = 'BRL'): string {
+  const localeMap: Record<string, string> = {
+    BRL: 'pt-BR',
+    USD: 'en-US',
+    EUR: 'de-DE',
+    GBP: 'en-GB',
+  };
+  const locale = localeMap[currencyCode] || 'pt-BR';
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(amount);
+  } catch {
+    return `${currencyCode} ${amount.toFixed(2)}`;
+  }
 }
 
 /**

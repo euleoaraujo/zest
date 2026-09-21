@@ -5,6 +5,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { formatCurrency, formatDateHeader } from '../utils/formatters';
 import { LogoStatic } from './AnimatedLogo';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 interface HeaderProps {
   total: number;
@@ -15,12 +16,11 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ total, onOpenAllExpenses }) => {
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 375;
+  const { dailyGoal, currency } = useSettingsStore();
 
-  // Cálculo da meta de gastos diários (base de R$ 350,00 ou ajustada dinamicamente)
-  const dailyGoal = 350;
   const isOverGoal = total > dailyGoal;
   const remaining = Math.max(0, dailyGoal - total);
-  const progressPercent = Math.min(100, Math.round((total / dailyGoal) * 100));
+  const progressPercent = Math.min(100, Math.round((total / (dailyGoal || 1)) * 100));
 
   return (
     <View style={styles.container}>
@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({ total, onOpenAllExpenses }) => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.totalValue}>{formatCurrency(total)}</Text>
+        <Text style={styles.totalValue}>{formatCurrency(total, currency)}</Text>
 
         <View style={styles.cardDivider} />
 
@@ -57,12 +57,12 @@ export const Header: React.FC<HeaderProps> = ({ total, onOpenAllExpenses }) => {
             <Text style={styles.goalLabel}>Meta de gastos</Text>
             <Text style={[styles.goalStatus, isOverGoal ? styles.goalStatusOver : styles.goalStatusOk]}>
               {isOverGoal
-                ? `+${formatCurrency(total - dailyGoal)} acima`
-                : `restam ${formatCurrency(remaining)}`}
+                ? `+${formatCurrency(total - dailyGoal, currency)} acima`
+                : `restam ${formatCurrency(remaining, currency)}`}
             </Text>
           </View>
           <View style={styles.goalRight}>
-            <Text style={styles.goalValue}>{formatCurrency(dailyGoal)}</Text>
+            <Text style={styles.goalValue}>{formatCurrency(dailyGoal, currency)}</Text>
             <Text style={styles.goalPercentText}>{progressPercent}%</Text>
           </View>
         </View>

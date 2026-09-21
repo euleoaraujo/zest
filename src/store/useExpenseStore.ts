@@ -10,8 +10,10 @@ import {
   insertExpense,
   deleteExpenseById,
 } from '../database/db';
+import { apiAddExpense, apiDeleteExpense } from '../services/api';
 
 interface ExpenseState {
+  currentUserId: number | null;
   categories: Category[];
   todayExpenses: ExpenseWithCategory[];
   todayTotal: number;
@@ -27,14 +29,16 @@ interface ExpenseState {
   openAllExpenses: () => void;
   closeAllExpenses: () => void;
   setSelectedCategory: (category: Category | null) => void;
-  loadInitialData: () => Promise<void>;
-  refreshToday: () => Promise<void>;
-  refreshAllExpenses: () => Promise<void>;
+  loadInitialData: (userId?: number) => Promise<void>;
+  clearExpenses: () => void;
+  refreshToday: (userId?: number) => Promise<void>;
+  refreshAllExpenses: (userId?: number) => Promise<void>;
   createExpense: (amount: number, categoryId: number, description?: string) => Promise<void>;
   removeExpense: (id: number) => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseState>((set, get) => ({
+  currentUserId: null,
   categories: [],
   todayExpenses: [],
   todayTotal: 0,
@@ -73,16 +77,46 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     set({ selectedCategory: category });
   },
 
-  loadInitialData: async () => {
+  clearExpenses: () => {
+    set({
+      currentUserId: null,
+      todayExpenses: [],
+      todayTotal: 0,
+      monthTotal: 0,
+      allExpenses: [],
+      allTotal: 0,
+      isLoading: false,
+    });
+  },
+
+  loadInitialData: async (userId?: number) => {
     set({ isLoading: true });
     try {
       const categories = await fetchCategories();
+      const targetUserId = userId !== undefined ? userId : get().currentUserId;
+
+      if (!targetUserId) {
+        set({
+          currentUserId: null,
+          categories,
+          todayExpenses: [],
+          todayTotal: 0,
+          monthTotal: 0,
+          allExpenses: [],
+          allTotal: 0,
+          isLoading: false,
+        });
+        return;
+      }
+
+      set({ currentUserId: targetUserId });
+
       const [todayExpenses, todayTotal, allExpenses, allTotal, monthTotal] = await Promise.all([
-        fetchTodayExpenses(),
-        fetchTodayTotal(),
-        fetchAllExpenses(),
-        fetchAllTotal(),
-        fetchMonthTotal(),
+        fetchTodayExpenses(targetUserId),
+        fetchTodayTotal(targetUserId),
+        fetchAllExpenses(targetUserId),
+        fetchAllTotal(targetUserId),
+        fetchMonthTotal(targetUserId),
       ]);
       set({
         categories,
@@ -98,31 +132,43 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     }
   },
 
-  refreshToday: async () => {
+  refreshToday: async (userId?: number) => {
+    const targetUserId = userId || get().currentUserId || undefined;
+    if (!targetUserId) return;
     const [todayExpenses, todayTotal, monthTotal] = await Promise.all([
-      fetchTodayExpenses(),
-      fetchTodayTotal(),
-      fetchMonthTotal(),
+      fetchTodayExpenses(targetUserId),
+      fetchTodayTotal(targetUserId),
+      fetchMonthTotal(targetUserId),
     ]);
     set({ todayExpenses, todayTotal, monthTotal });
   },
 
-  refreshAllExpenses: async () => {
+  refreshAllExpenses: async (userId?: number) => {
+    const targetUserId = userId || get().currentUserId || undefined;
+    if (!targetUserId) return;
     const [allExpenses, allTotal, monthTotal] = await Promise.all([
-      fetchAllExpenses(),
-      fetchAllTotal(),
-      fetchMonthTotal(),
+      fetchAllExpenses(targetUserId),
+      fetchAllTotal(targetUserId),
+      fetchMonthTotal(targetUserId),
     ]);
     set({ allExpenses, allTotal, monthTotal });
   },
 
   createExpense: async (amount: number, categoryId: number, description?: string) => {
-    await insertExpense(amount, categoryId, description);
-    await Promise.all([get().refreshToday(), get().refreshAllExpenses()]);
+    const targetUserId = get().currentUserId || undefined;
+    try {
+      await apiAddExpense(amount, categoryId, description, targetUserId);
+    } catch {}
+    await insertExpense(amount, categoryId, description, targetUserId);
+    await Promise.all([get().refreshToday(targetUserId), get().refreshAllExpenses(targetUserId)]);
   },
 
   removeExpense: async (id: number) => {
-    await deleteExpenseById(id);
-    await Promise.all([get().refreshToday(), get().refreshAllExpenses()]);
+    const targetUserId = get().currentUserId || undefined;
+    try {
+      await apiDeleteExpense(id, targetUserId);
+    } catch {}
+    await deleteExpenseById(id, targetUserId);
+    await Promise.all([get().refreshToday(targetUserId), get().refreshAllExpenses(targetUserId)]);
   },
 }));

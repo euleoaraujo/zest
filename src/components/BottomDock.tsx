@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+import { ColorTheme } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 export type DockTab = 'dashboard' | 'timeline' | 'stats' | 'settings';
 
@@ -15,6 +16,9 @@ export const BottomDock: React.FC<BottomDockProps> = ({
   currentTab,
   onTabChange,
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       <View style={styles.dockContainer}>
@@ -78,37 +82,38 @@ export const BottomDock: React.FC<BottomDockProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {
-    position: 'absolute',
-    bottom: 22,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 99,
-  },
-  dockContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.dockBg,
-    paddingHorizontal: 26,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 1,
-    borderColor: colors.dockBorder,
-    gap: 32,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  tabButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+const createStyles = (colors: ColorTheme, isDark: boolean) =>
+  StyleSheet.create({
+    wrapper: {
+      position: 'absolute',
+      bottom: 22,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 99,
+    },
+    dockContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.dockBg,
+      paddingHorizontal: 26,
+      height: 58,
+      borderRadius: 29,
+      borderWidth: 1,
+      borderColor: colors.dockBorder,
+      gap: 32,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.5 : 0.15,
+      shadowRadius: 16,
+      elevation: 10,
+    },
+    tabButton: {
+      width: 36,
+      height: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
